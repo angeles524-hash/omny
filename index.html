@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMNY Refill Wizard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            background: #f5f5f5;
+            background-image: 
+                linear-gradient(0deg, transparent 24%, rgba(0, 0, 0, .02) 25%, rgba(0, 0, 0, .02) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .02) 75%, rgba(0, 0, 0, .02) 76%, transparent 77%, transparent),
+                linear-gradient(90deg, transparent 24%, rgba(0, 0, 0, .02) 25%, rgba(0, 0, 0, .02) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .02) 75%, rgba(0, 0, 0, .02) 76%, transparent 77%, transparent);
+            background-size: 50px 50px;
+            background-attachment: fixed;
+            padding: 0;
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        /* Black OMNY Header */
+        .omny-header {
+            width: 100%;
+            background: #000;
+            padding: 1.25rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 200;
+        }
+        .omny-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .omny-logo-circle {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2.5px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 900;
+            color: #fff;
+        }
+        .omny-logo-text {
+            font-size: 1.75rem;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 0.05em;
+        }
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .header-link {
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+        .header-link:hover {
+            opacity: 0.8;
+        }
+        
+        /* Main content wrapper */
+        .content-wrapper {
+            width: 100%;
+            max-width: 1200px;
+            padding: 3rem 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .card { 
+            background: white; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            border: 1px solid #e0e0e0;
+            max-width: 700px; 
+            width: 100%; 
+            position: relative; 
+            z-index: 100; 
+        }
+        .header { padding: 2rem; border-bottom: 2px solid #000; }
+        .logo-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .logo { display: flex; align-items: center; gap: 0.5rem; font-size: 1.5rem; font-weight: 900; color: #000; }
+        .mta-circle { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #000; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 900; color: #000; }
+        .progress-dots { display: flex; gap: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #d1d5db; transition: all 0.3s; }
+        .dot.active { background: #00bcd4; transform: scale(1.2); }
+        .balance { color: #000; font-size: 0.95rem; font-weight: 500; }
+        .step { border-bottom: 1px solid #e0e0e0; }
+        .step:last-child { border-bottom: none; }
+        .step-header { padding: 1.25rem 2rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; background: white; transition: all 0.2s; border-left: 4px solid transparent; }
+        .step-header:hover { background: #fafafa; }
+        .step-header.active { background: #f5f5f5; border-left: 4px solid #00bcd4; }
+        .step-number { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #d1d5db; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #9ca3af; font-size: 1rem; }
+        .step-header.active .step-number { background: #00bcd4; border-color: #00bcd4; color: white; }
+        .step-title { font-weight: 700; font-size: 1.125rem; color: #000; }
+        .step-header.active .step-title { color: #00bcd4; }
+        .step-content { display: none; padding: 2rem; }
+        .step-content.show { display: block; animation: fadeIn 0.3s; }
+        .step-content > p { color: #000; font-weight: 500; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .quick-amounts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.5rem 0; }
+        .amount-btn { padding: 1.5rem 1rem; border: 2px solid #000; border-radius: 8px; background: white; cursor: pointer; font-weight: 700; font-size: 1.25rem; color: #000; transition: all 0.2s; }
+        .amount-btn:hover { border-color: #00bcd4; background: #e6f7ff; color: #00bcd4; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,188,212,0.2); }
+        .input-group { margin: 1.5rem 0; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #000; font-size: 0.95rem; }
+        input, select { width: 100%; padding: 0.875rem; border: 2px solid #000; border-radius: 8px; font-size: 1rem; font-weight: 500; transition: all 0.2s; }
+        input:focus, select:focus { outline: none; border-color: #00bcd4; box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.15); }
+        .btn { width: 100%; padding: 1.25rem; border: none; border-radius: 8px; font-weight: 700; font-size: 1.125rem; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #00bcd4; color: white; }
+        .btn-primary:hover:not(:disabled) { background: #00a9bc; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,188,212,0.3); }
+        .btn:disabled { background: #e0e0e0; cursor: not-allowed; color: #9ca3af; }
+        .payment-option, .address-option { padding: 1.25rem; border: 2px solid #000; border-radius: 8px; margin-bottom: 1rem; cursor: pointer; display: flex; align-items: center; gap: 1rem; transition: all 0.2s; font-weight: 600; }
+        .payment-option:hover, .address-option:hover { border-color: #00bcd4; background: #f5f5f5; }
+        .payment-option.selected, .address-option.selected { border-color: #00bcd4; background: #e6f7ff; }
+        .pay-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+        .apple-pay, .google-pay { padding: 1rem; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-weight: 700; font-size: 1rem; }
+        .apple-pay { background: #000; color: white; }
+        .apple-pay:hover { opacity: 0.9; transform: translateY(-2px); }
+        .google-pay { background: #fff; border: 2px solid #000; color: #000; }
+        .google-pay:hover { background: #fafafa; transform: translateY(-2px); }
+        .card-fields { display: none; margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #000; }
+        .card-fields.show { display: block; }
+        .address-fields { display: none; margin-top: 1rem; }
+        .address-fields.show { display: block; }
+        .row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; }
+        .review-row { display: flex; justify-content: space-between; padding: 0.875rem 0; border-bottom: 1px solid #e0e0e0; font-size: 1.05rem; }
+        .review-row:last-child { border-bottom: none; font-weight: 700; font-size: 1.35rem; margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #000; }
+        .review-row span:first-child { color: #000; font-weight: 600; }
+        .review-row span:last-child { color: #000; font-weight: 700; }
+        .success-screen { display: none; text-align: center; padding: 3rem 2rem; position: relative; z-index: 10; background: white; }
+        .success-screen.show { display: block; }
+        .success-emoji { font-size: 5rem; margin-bottom: 1rem; animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        .failure-emoji { font-size: 5rem; margin-bottom: 1rem; animation: shakeIn 0.6s ease-out; }
+        @keyframes bounceIn { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes shakeIn { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); } 20%, 40%, 60%, 80% { transform: translateX(10px); } }
+        .success-title { font-size: 2rem; font-weight: 800; margin-bottom: 0.75rem; background: linear-gradient(135deg, #00bcd4 0%, #10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: fadeInUp 0.5s ease-out 0.2s both; }
+        .failure-title { font-size: 2rem; font-weight: 800; margin-bottom: 0.75rem; color: #dc2626; animation: fadeInUp 0.5s ease-out 0.2s both; }
+        .success-message { color: #000; font-size: 1.125rem; margin-bottom: 2rem; animation: fadeInUp 0.5s ease-out 0.3s both; font-weight: 500; }
+        .failure-message { color: #000; font-size: 1rem; margin-bottom: 2rem; animation: fadeInUp 0.5s ease-out 0.3s both; }
+        .balance-amount { font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #00bcd4 0%, #0891b2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden { display: none; }
+        #processing-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; justify-content: center; align-items: center; flex-direction: column; text-align: center; padding: 2rem; }
+        #processing-screen.show { display: flex; }
+        #subway-train-container { width: 100%; max-width: 500px; height: 50px; background-color: #e0e0e0; overflow: hidden; position: relative; border-radius: 8px; margin: 2rem 0; }
+        #train-wrapper { position: absolute; width: 630px; height: 35px; top: 7px; left: -630px; display: flex; align-items: center; animation: moveTrain 4s cubic-bezier(0.4, 0.0, 1.0, 1.0) forwards; animation-play-state: paused; }
+        @keyframes moveTrain { 100% { transform: translateX(calc(100vw + 630px)); } }
+        .rail-car { width: 150px; height: 100%; background-color: #BCC0C5; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: 1px solid #718096; }
+        .train-coupler { width: 10px; height: 5px; background-color: #4a5568; align-self: center; }
+        .train-details { display: flex; height: 100%; align-items: center; justify-content: space-around; padding: 0 5px; }
+        .door { width: 18px; height: 100%; background-color: #4a5568; }
+        .window { width: 20px; height: 50%; background-color: #4299e1; border-radius: 1px; border: 1px solid #718096; }
+        @media (max-width: 640px) { 
+            body { padding: 0; }
+            .omny-header { padding: 1rem; }
+            .omny-logo-circle { width: 38px; height: 38px; font-size: 0.65rem; }
+            .omny-logo-text { font-size: 1.5rem; }
+            .header-actions { gap: 0.75rem; }
+            .header-link { font-size: 0.85rem; }
+            .content-wrapper { padding: 1rem; }
+            .card { max-width: 100%; border-radius: 12px; } 
+            .row { grid-template-columns: 1fr; gap: 0; }
+            .row .input-group { margin: 0.75rem 0; }
+            .amount-btn { padding: 1.25rem 0.75rem; font-size: 1.125rem; }
+            .success-screen { padding: 2rem 1.5rem; }
+            .success-emoji, .failure-emoji { font-size: 4rem; margin-bottom: 1rem; }
+            .success-title, .failure-title { font-size: 1.75rem; margin-bottom: 0.75rem; }
+            .success-message, .failure-message { font-size: 1rem; margin-bottom: 2rem; }
+            .success-screen > div:nth-child(4) { background: none !important; border: none !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 2rem !important; }
+            .balance-amount { font-size: 3.5rem !important; margin-bottom: 0.5rem !important; }
+            .success-screen > div:nth-child(4) > p:first-child { display: none; }
+            .success-screen > div:nth-child(4) > p:nth-child(3) { font-size: 0.875rem !important; margin-bottom: 1.5rem !important; }
+            .success-screen > div:nth-child(4) > div { background: #f9fafb !important; border: 1px solid #e5e7eb !important; padding: 1rem !important; margin-top: 1rem !important; }
+            .success-screen > div:nth-child(4) > div p:first-child { font-size: 0.75rem !important; margin-bottom: 0.5rem !important; color: #6b7280 !important; }
+            .success-screen > div:nth-child(4) > div p:last-child { font-size: 1.25rem !important; font-weight: 700 !important; }
+            .success-screen button { padding: 1rem; font-size: 1rem; }
+            #failureScreen > div:nth-child(4) { padding: 1.5rem !important; margin-bottom: 1.5rem !important; }
+            .success-screen > div:last-child { margin-top: 2rem !important; padding-top: 1.5rem !important; }
+            .success-screen > div:last-child > div { font-size: 0.875rem !important; }
+            .success-screen > div:last-child p { font-size: 0.75rem !important; }
+            label { font-size: 0.875rem; word-wrap: break-word; }
+            .address-fields { margin-top: 1rem; }
+            .address-fields .input-group { margin: 0.75rem 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="omny-header">
+        <div class="omny-logo">
+            <div class="omny-logo-circle">MTA</div>
+            <div class="omny-logo-text">OMNY</div>
+        </div>
+        <div class="header-actions">
+            <a href="#" class="header-link">How OMNY Works</a>
+            <a href="#" class="header-link">Help</a>
+        </div>
+    </div>
+    
+    <div class="content-wrapper">
+    <div class="card">
+        <div id="wizardView">
+            <div class="header">
+                <div class="logo-row">
+                    <div class="logo">
+                        <div class="mta-circle">MTA</div>
+                        <div>OMNY</div>
+                    </div>
+                    <div class="progress-dots">
+                        <div class="dot active"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+                <div class="balance">Card **7890 (Balance: $<span id="balance">15.25</span>)</div>
+            </div>
+            
+            <div class="step" id="step1">
+                <div class="step-header active" onclick="app.showStep(1)">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Choose Amount</div>
+                </div>
+                <div class="step-content show">
+                    <p style="margin-bottom: 1rem;">Select a quick amount or enter custom value.</p>
+                    <div class="quick-amounts">
+                        <button class="amount-btn" onclick="app.selectAmount(10)">$10.00</button>
+                        <button class="amount-btn" onclick="app.selectAmount(20)">$20.00</button>
+                        <button class="amount-btn" onclick="app.selectAmount(50)">$50.00</button>
+                    </div>
+                    <div class="input-group">
+                        <label>Custom Amount</label>
+                        <input type="number" id="customAmount" placeholder="e.g., 18.00" step="0.01" min="1" oninput="app.updateCustomAmount()">
+                    </div>
+                    <button class="btn btn-primary" id="step1btn" onclick="app.goToStep(2)" disabled>Continue to Payment</button>
+                </div>
+            </div>
+            
+            <div class="step" id="step2">
+                <div class="step-header" onclick="app.showStep(2)">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Payment Method</div>
+                </div>
+                <div class="step-content">
+                    <p style="margin-bottom: 1rem;">Choose your payment method.</p>
+                    <div class="payment-option" onclick="app.selectPayment('new')">
+                        <span style="font-size: 1.5rem;">💳</span>
+                        <div>New Credit/Debit Card</div>
+                    </div>
+                    <div class="payment-option selected" id="storedCard" onclick="app.selectPayment('stored')">
+                        <span style="font-size: 1.5rem;">💳</span>
+                        <div>Visa ending **1234 (Default)</div>
+                    </div>
+                    <div class="pay-buttons">
+                        <button class="apple-pay" onclick="app.selectPayment('apple')">Apple Pay</button>
+                        <button class="google-pay" onclick="app.selectPayment('google')">Google Pay</button>
+                    </div>
+                    <div class="card-fields" id="cardFields">
+                        <div class="input-group">
+                            <label>Card Number</label>
+                            <input type="text" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19" oninput="app.formatCard(this)">
+                        </div>
+                        <div class="input-group">
+                            <label>Cardholder Name</label>
+                            <input type="text" id="cardName" placeholder="JANE DOE">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="input-group">
+                                <label>Expiry (MM/YY)</label>
+                                <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="app.formatExpiry(this)">
+                            </div>
+                            <div class="input-group">
+                                <label>CVV</label>
+                                <input type="text" id="cardCvv" placeholder="123" maxlength="3" oninput="this.value=this.value.replace(/\\D/g,'')">
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="app.goToStep(3)">Continue to Billing</button>
+                </div>
+            </div>
+            
+            <div class="step" id="step3">
+                <div class="step-header" onclick="app.showStep(3)">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Billing & Save</div>
+                </div>
+                <div class="step-content">
+                    <p style="margin-bottom: 1rem; font-weight: 600;">Billing Address</p>
+                    <div class="address-option selected" id="savedAddress" onclick="app.selectAddress('saved')">
+                        <span style="font-size: 1.5rem;">🏠</span>
+                        <div>
+                            <div style="font-weight: 600;">Saved Address (Default)</div>
+                            <div style="font-size: 0.875rem; color: #000; opacity: 0.7;">123 Main St, Apt 4B, New York, NY 10001</div>
+                        </div>
+                    </div>
+                    <div class="address-option" onclick="app.selectAddress('new')">
+                        <span style="font-size: 1.5rem;">📝</span>
+                        <div>Enter New Billing Address</div>
+                    </div>
+                    <div class="address-fields" id="addressFields">
+                        <div class="input-group">
+                            <label>Street Address 1</label>
+                            <input type="text" id="street1" placeholder="123 Main Street">
+                        </div>
+                        <div class="input-group">
+                            <label>Apt, Unit, etc. (Optional)</label>
+                            <input type="text" id="street2" placeholder="Apt 4B">
+                        </div>
+                        <div class="row">
+                            <div class="input-group">
+                                <label>City</label>
+                                <input type="text" id="city" placeholder="New York">
+                            </div>
+                            <div class="input-group">
+                                <label>State</label>
+                                <select id="state">
+                                    <option value="">--</option>
+                                    <option value="NY">NY</option>
+                                    <option value="CA">CA</option>
+                                    <option value="TX">TX</option>
+                                    <option value="FL">FL</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>ZIP</label>
+                                <input type="text" id="zip" placeholder="10001" maxlength="5" oninput="this.value=this.value.replace(/\\D/g,'')">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin: 1.5rem 0; padding-top: 1.5rem; border-top: 1px solid #e0e0e0;">
+                        <p style="margin-bottom: 1rem; font-weight: 600;">Card Options</p>
+                        <label style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" id="saveCard" style="width: auto; margin-top: 0.25rem; flex-shrink: 0;">
+                            <span style="flex: 1;">Save card for future refills</span>
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="app.goToStep(4)">Continue to Confirmation</button>
+                </div>
+            </div>
+            
+            <div class="step" id="step4">
+                <div class="step-header" onclick="app.showStep(4)">
+                    <div class="step-number">4</div>
+                    <div class="step-title">Confirm & Pay</div>
+                </div>
+                <div class="step-content">
+                    <p style="margin-bottom: 1.5rem; font-weight: 600;">Review Details</p>
+                    <div class="review-row">
+                        <span>Refill Amount:</span>
+                        <span id="reviewAmount">$0.00</span>
+                    </div>
+                    <div class="review-row">
+                        <span>Payment Method:</span>
+                        <span id="reviewPayment">Visa **1234</span>
+                    </div>
+                    <div class="review-row">
+                        <span style="color: #00bcd4 !important;">Total Due:</span>
+                        <span style="color: #00bcd4 !important;" id="totalDue">$0.00</span>
+                    </div>
+                    <button class="btn btn-primary" style="margin-top: 1.5rem;" id="payBtn" onclick="app.completePurchase()" disabled>Load $0.00 to OMNY</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="processing-screen">
+            <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 2rem; color: #000;">Processing Refill...</h3>
+            <div id="subway-train-container">
+                <div id="train-wrapper">
+                    <div class="rail-car"><div class="train-details"><div class="window"></div><div class="door"></div><div class="window"></div><div class="door"></div><div class="window"></div><div class="door"></div><div class="window"></div></div></div>
+                    <div class="train-coupler"></div>
+                    <div class="rail-car"><div class="train-details"><div class="window"></div><div class="door"></div><div class="window"></div><div class="door"></div><div class="window"></div><div class="door"></div><div class="window"></div></div></div>
+                    <div class="train-coupler"></div>
+                    <div class="rail-car"><div class="train-details"><div class="window"></div><div class="door"></div><div class="window"></div><div class="door"></div><div class="window"></div><div class="door"></div><div class="window"></div></div></div>
+                    <div class="train-coupler"></div>
+                    <div class="rail-car"><div class="train-details"><div class="window"></div><div class="door"></div><div class="window"></div><div class="door"></div><div class="window"></div><div class="door"></div><div class="window"></div></div></div>
+                </div>
+            </div>
+            <p style="color: #000; margin-top: 1.5rem; font-weight: 500;">Hang tight while we reload your OMNY card.</p>
+        </div>
+        
+        <div class="success-screen" id="successScreen">
+            <div class="success-emoji">🎉</div>
+            <h2 class="success-title">Card Reloaded!</h2>
+            <p class="success-message" id="successMessage"></p>
+            <div style="background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%); border: 2px solid #10b981; border-radius: 16px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);">
+                <p style="font-size: 0.75rem; color: #6b7280; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">OMNY Card **7890</p>
+                <p class="balance-amount" id="newBalance"></p>
+                <p style="font-size: 0.875rem; color: #6b7280; margin-bottom: 1.5rem;">New Available Balance</p>
+                <div style="background: white; padding: 1rem; border-radius: 8px; border: 1px solid #e5e7eb;">
+                    <p style="font-size: 0.75rem; color: #6b7280; margin-bottom: 0.25rem; text-transform: uppercase; letter-spacing: 0.05em;">Confirmation Number</p>
+                    <p style="font-size: 1.25rem; font-weight: 600; letter-spacing: 0.05em; color: #111827; font-family: 'Courier New', monospace;" id="confirmationNum"></p>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="location.reload()">Start New Refill</button>
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #000;">
+                <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1rem; font-size: 0.95rem;">
+                    <a href="#" style="color: #000; text-decoration: none; font-weight: 600;">Help & FAQs</a>
+                    <a href="#" style="color: #000; text-decoration: none; font-weight: 600;">My Account</a>
+                    <a href="#" style="color: #000; text-decoration: none; font-weight: 600;">Contact Us</a>
+                </div>
+                <p style="font-size: 0.75rem; color: #000; opacity: 0.6;">© 2025 Metropolitan Transportation Authority</p>
+            </div>
+        </div>
+        
+        <div class="success-screen" id="failureScreen">
+            <div class="failure-emoji">⚠️</div>
+            <h2 class="failure-title">Payment Failed</h2>
+            <p class="failure-message" id="failureMessage">We couldn't process your payment. Please check your payment information and try again.</p>
+            <div style="background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%); border: 2px solid #ef4444; border-radius: 16px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.15);">
+                <p style="font-size: 0.875rem; color: #dc2626; font-weight: 600; margin-bottom: 1rem;">Common Issues:</p>
+                <ul style="text-align: left; color: #6b7280; font-size: 0.875rem; line-height: 1.6; margin-left: 1.5rem;">
+                    <li>Card expired or declined</li>
+                    <li>Insufficient funds</li>
+                    <li>Incorrect billing information</li>
+                    <li>Network connection issue</li>
+                </ul>
+            </div>
+            <button class="btn btn-primary" onclick="app.retryPayment()">Try Again</button>
+            <button class="btn" style="margin-top: 1rem; background: #f3f4f6; color: #374151;" onclick="location.reload()">Start Over</button>
+            <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #000;">
+                <p style="font-size: 0.95rem; color: #000; font-weight: 600;">Need help? <a href="#" style="color: #00bcd4; text-decoration: none; font-weight: 700;">Contact Support</a></p>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script>
+var app = {
+    currentAmount: 0,
+    paymentType: 'stored',
+    addressType: 'saved',
+    messages: [
+        "Card Reloaded! Now go ride that rail!",
+        "Refill Complete! Look at you being all eco-friendly.",
+        "Transfer Approved! Another smooth transaction on the MTA.",
+        "Congrats! You're ready to tap into the city.",
+        "Success! Thanks for using the MTA.",
+        "Huzzah! A celebration on the G train is in order.",
+        "Thank you! You are free to move about the city.",
+        "Yay! I hope you're on your way to Queens for some delicious food.",
+        "Bully for you! Smashing good choice, riding the MTA."
+    ],
+    subwayLines: [
+        {color:'#EE352E'}, {color:'#00933C'}, {color:'#FCCC0A'}, {color:'#0039A6'},
+        {color:'#FF6319'}, {color:'#6CBE45'}, {color:'#B933AD'}, {color:'#A7A9AC'}, {color:'#996633'}
+    ],
+    
+    selectAmount: function(amt) { 
+        this.currentAmount = amt; 
+        document.getElementById('customAmount').value = ''; 
+        this.updateUI(); 
+        var self = this; 
+        setTimeout(function() { self.goToStep(2); }, 400); 
+    },
+    
+    updateCustomAmount: function() { 
+        this.currentAmount = parseFloat(document.getElementById('customAmount').value) || 0; 
+        this.updateUI(); 
+    },
+    
+    updateUI: function() { 
+        var f = this.currentAmount.toFixed(2); 
+        document.getElementById('step1btn').disabled = this.currentAmount <= 0; 
+        document.getElementById('reviewAmount').textContent = '$' + f; 
+        document.getElementById('totalDue').textContent = '$' + f; 
+        document.getElementById('payBtn').textContent = 'Load $' + f + ' to OMNY'; 
+        document.getElementById('payBtn').disabled = this.currentAmount <= 0; 
+    },
+    
+    showStep: function(n) { 
+        if (n > this.getCurrentStep()) return; 
+        this.goToStep(n); 
+    },
+    
+    getCurrentStep: function() { 
+        for (var i = 1; i <= 4; i++) { 
+            if (document.querySelector('#step' + i + ' .step-header').classList.contains('active')) return i; 
+        } 
+        return 1; 
+    },
+    
+    goToStep: function(n) { 
+        for (var i = 1; i <= 4; i++) { 
+            document.querySelector('#step' + i + ' .step-header').classList.remove('active'); 
+            document.querySelector('#step' + i + ' .step-content').classList.remove('show'); 
+            document.querySelectorAll('.dot')[i-1].classList.remove('active'); 
+        } 
+        document.querySelector('#step' + n + ' .step-header').classList.add('active'); 
+        document.querySelector('#step' + n + ' .step-content').classList.add('show'); 
+        document.querySelectorAll('.dot')[n-1].classList.add('active'); 
+    },
+    
+    selectPayment: function(t) { 
+        this.paymentType = t; 
+        document.querySelectorAll('.payment-option').forEach(function(e) { e.classList.remove('selected'); }); 
+        if (t === 'new') { 
+            document.querySelector('.payment-option').classList.add('selected'); 
+            document.getElementById('cardFields').classList.add('show'); 
+            document.getElementById('reviewPayment').textContent = 'New Card'; 
+        } else if (t === 'stored') { 
+            document.getElementById('storedCard').classList.add('selected'); 
+            document.getElementById('cardFields').classList.remove('show'); 
+            document.getElementById('reviewPayment').textContent = 'Visa **1234'; 
+            this.goToStep(3); 
+        } else { 
+            document.getElementById('cardFields').classList.remove('show'); 
+            document.getElementById('reviewPayment').textContent = t === 'apple' ? 'Apple Pay' : 'Google Pay'; 
+            this.goToStep(4); 
+        } 
+    },
+    
+    selectAddress: function(t) { 
+        this.addressType = t; 
+        document.querySelectorAll('.address-option').forEach(function(e) { e.classList.remove('selected'); }); 
+        if (t === 'new') { 
+            document.querySelectorAll('.address-option')[1].classList.add('selected'); 
+            document.getElementById('addressFields').classList.add('show'); 
+        } else { 
+            document.getElementById('savedAddress').classList.add('selected'); 
+            document.getElementById('addressFields').classList.remove('show'); 
+        } 
+    },
+    
+    formatCard: function(inp) { 
+        var v = inp.value.replace(/\D/g, ''); 
+        var p = v.match(/.{1,4}/g); 
+        inp.value = p ? p.join(' ') : v; 
+    },
+    
+    formatExpiry: function(inp) { 
+        var v = inp.value.replace(/\D/g, ''); 
+        if (v.length > 2) v = v.substring(0, 2) + '/' + v.substring(2, 4); 
+        inp.value = v; 
+    },
+    
+    completePurchase: function() { 
+        if (this.currentAmount <= 0) return; 
+        var shouldFail = Math.random() < 0.1;
+        var ob = parseFloat(document.getElementById('balance').textContent); 
+        var nb = (ob + this.currentAmount).toFixed(2); 
+        var cf = Math.random().toString(36).substring(2, 10).toUpperCase(); 
+        var ms = this.messages[Math.floor(Math.random() * this.messages.length)]; 
+        document.getElementById('wizardView').style.display = 'none'; 
+        document.getElementById('processing-screen').classList.add('show'); 
+        var tr = document.getElementById('train-wrapper'); 
+        tr.style.animationPlayState = 'running'; 
+        tr.style.left = '-630px'; 
+        var self = this; 
+        setTimeout(function() { 
+            document.getElementById('processing-screen').classList.remove('show'); 
+            if (shouldFail) {
+                document.getElementById('failureScreen').classList.add('show');
+                window.scrollTo(0, 0);
+            } else {
+                document.getElementById('balance').textContent = nb; 
+                document.getElementById('newBalance').textContent = '$' + nb; 
+                document.getElementById('confirmationNum').textContent = cf; 
+                document.getElementById('successMessage').textContent = ms; 
+                document.getElementById('successScreen').classList.add('show'); 
+                window.scrollTo(0, 0);
+                setTimeout(function() { self.createSubwayLines(); }, 300); 
+            }
+        }, 4000); 
+    },
+    
+    retryPayment: function() {
+        document.getElementById('failureScreen').classList.remove('show');
+        document.getElementById('wizardView').style.display = 'block';
+        this.goToStep(2);
+    },
+    
+    createSubwayLines: function() {
+        var ss = document.getElementById('successScreen');
+        var rect = ss.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.style.position = 'fixed';
+        svg.style.top = '0';
+        svg.style.left = '0';
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+        svg.style.zIndex = '-1';
+        svg.style.pointerEvents = 'none';
+        document.body.appendChild(svg);
+        
+        var p1 = 'M ' + (vw * 0.2) + ' -100 Q ' + (vw * 0.3) + ' ' + (vh * 0.2) + ', ' + (cx - 40) + ' ' + cy;
+        var p2 = 'M ' + (vw + 100) + ' ' + (vh * 0.15) + ' Q ' + (vw * 0.75) + ' ' + (vh * 0.3) + ', ' + (cx + 30) + ' ' + cy;
+        var p3 = 'M ' + (vw + 100) + ' ' + (vh * 0.45) + ' Q ' + (vw * 0.7) + ' ' + (vh * 0.47) + ', ' + cx + ' ' + cy;
+        var p4 = 'M -100 ' + (vh * 0.4) + ' Q ' + (vw * 0.2) + ' ' + (vh * 0.42) + ', ' + (cx - 20) + ' ' + cy;
+        var p5 = 'M ' + (cx + 20) + ' -100 Q ' + (cx + 30) + ' ' + (vh * 0.25) + ', ' + (cx + 10) + ' ' + cy;
+        var p6 = 'M ' + (vw * 0.25) + ' ' + (vh + 100) + ' Q ' + (vw * 0.3) + ' ' + (vh * 0.75) + ', ' + (cx - 30) + ' ' + cy;
+        var p7 = 'M ' + (vw + 100) + ' ' + (vh * 0.3) + ' Q ' + (vw * 0.72) + ' ' + (vh * 0.38) + ', ' + (cx + 20) + ' ' + cy;
+        var p8 = 'M ' + (vw * 0.75) + ' ' + (vh + 100) + ' Q ' + (vw * 0.7) + ' ' + (vh * 0.7) + ', ' + (cx + 15) + ' ' + cy;
+        var p9 = 'M -100 ' + (vh * 0.7) + ' Q ' + (vw * 0.15) + ' ' + (vh * 0.65) + ', ' + (cx - 25) + ' ' + cy;
+        
+        var paths = [p1, p2, p3, p4, p5, p6, p7, p8, p9];
+        
+        var self = this;
+        this.subwayLines.forEach(function(ln, i) {
+            var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', paths[i]);
+            path.setAttribute('stroke', ln.color);
+            path.setAttribute('stroke-width', '6');
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('stroke-linejoin', 'round');
+            svg.appendChild(path);
+            
+            var length = path.getTotalLength();
+            path.style.strokeDasharray = length;
+            path.style.strokeDashoffset = length;
+            path.style.opacity = '1';
+            
+            setTimeout(function() {
+                path.style.transition = 'stroke-dashoffset 2.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.5s ease-out 2s';
+                path.style.strokeDashoffset = '0';
+                setTimeout(function() {
+                    path.style.opacity = '0';
+                }, 2000);
+            }, i * 200);
+        });
+    }
+};
+    </script>
+</body>
+</html>
